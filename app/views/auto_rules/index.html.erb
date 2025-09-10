@@ -1,0 +1,99 @@
+<h2>Auto Rules</h2>
+
+<%= form_with model: [@project, @rule], local: true do |f| %>
+  <p>
+    <%= f.label :custom_field_id, "Custom Field" %><br>
+    <%= f.collection_select :custom_field_id,
+        CustomField.where(type: "IssueCustomField"),
+        :id, :name,
+        { include_blank: true },
+        { id: "custom_field_select" } %>
+  </p>
+
+  <p>
+    <%= f.label :custom_field_value, "Custom Field Value" %><br>
+    <%= f.select :custom_field_value, [], { include_blank: true }, { id: "custom_field_value_select" } %>
+  </p>
+
+  <p>
+    <%= f.label :assignee_id, "Assignee" %><br>
+    <%= f.collection_select :assignee_id,
+        @assignable_principals,
+        :id, :name,
+        { include_blank: true } %>
+  </p>
+
+  <p>
+    <%= f.label :watcher_ids_array, "Watchers" %><br>
+    <% @assignable_principals.each do |principal| %>
+      <label>
+        <%= check_box_tag "auto_rule[watcher_ids_array][]", principal.id, @rule.watcher_ids_array.include?(principal.id) %>
+        <%= principal.name %>
+      </label><br>
+    <% end %>
+  </p>
+
+  <%= f.submit "Add Rule" %>
+<% end %>
+
+<hr>
+
+<h3>Existing Rules</h3>
+<table class="list">
+  <thead>
+    <tr>
+      <th>Custom Field</th>
+      <th>Value</th>
+      <th>Assignee</th>
+      <th>Watchers</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @rules.each do |rule| %>
+      <tr>
+        <td><%= rule.custom_field.try(:name) %></td>
+        <td><%= rule.custom_field_value %></td>
+        <td><%= rule.assignee.try(:name) %></td>
+        <td><%= rule.watchers.map(&:name).join(", ") %></td>
+        <td>
+          <%= link_to "Delete", project_auto_rule_path(@project, rule),
+                method: :delete, data: { confirm: "Are you sure?" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<script>
+document.getElementById("custom_field_select").addEventListener("change", function() {
+  var fieldId = this.value;
+  var select = document.getElementById("custom_field_value_select");
+
+  if (!fieldId) {
+    select.innerHTML = "<option value=''></option>";
+    return;
+  }
+
+  // Use the correct nested route helper name with the project ID
+  fetch("<%= custom_field_values_project_auto_rules_path(@project) %>" + "?id=" + fieldId)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      select.innerHTML = "<option value=''></option>";
+      data.forEach(function(option) {
+        var opt = document.createElement("option");
+        opt.value = option;
+        opt.textContent = option;
+        select.appendChild(opt);
+      });
+    })
+    .catch(error => {
+      console.error('Fetch error:', error);
+    });
+});
+</script>

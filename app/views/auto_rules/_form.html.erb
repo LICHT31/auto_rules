@@ -1,0 +1,16 @@
+<p>
+  <%= f.label :custom_field_id, "Custom Field" %><br>
+  <%= f.collection_select :custom_field_id,
+        CustomField.where(type: "IssueCustomField"),
+        :id, :name,
+        { include_blank: true },
+        { id: "custom_field_select" } %>
+</p>
+
+<p>
+  <%= f.label :custom_field_value, "Custom Field Value" %><br>
+  <%= f.select :custom_field_value,
+        [],
+        { include_blank: true },
+        { id: "custom_field_value_select" } %>
+</p>
